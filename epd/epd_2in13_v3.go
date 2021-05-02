@@ -199,7 +199,7 @@ func (e *Dev2in13v3) Reset() error {
 
 func (e *Dev2in13v3) sendCommand(b byte) error {
 	// skip noisy commands (wait for idle)
-	e.log.Debug("sending command: 0x%x\n", b)
+	e.log.With("cmd", b).Debug("sending command")
 	if err := e.dcPin.Out(gpio.Low); err != nil {
 		return errors.Wrap(err, "could not set DC pin to LOW")
 	}
