@@ -195,11 +195,11 @@ func RunApp(cmd *cobra.Command, args []string) {
 			sugaredLogger.With("err", err).Fatal("error while clearing the device screen")
 		}
 
-		bBuff, err := epd.GetBuffer(sugaredLogger, bImage, e.Bounds(), true)
+		bBuff, err := epd.GetBuffer(sugaredLogger, bImage, e.Bounds(), false)
 		if err != nil {
 			sugaredLogger.With("err", err).Fatal("could not generate buffer for black the GUI image")
 		}
-		rBuff, err := epd.GetBuffer(sugaredLogger, rImage, e.Bounds(), true)
+		rBuff, err := epd.GetBuffer(sugaredLogger, rImage, e.Bounds(), false)
 		if err != nil {
 			sugaredLogger.With("err", err).Fatal("could not generate buffer for red the GUI image")
 		}

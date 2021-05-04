@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"image"
+	"image/color"
 	"image/draw"
 	"time"
 	"weather-pi/netatmo"
@@ -35,7 +36,7 @@ func BuildGUI(logger *zap.SugaredLogger, bounds image.Rectangle, measurement []n
 	leftPane := image.Rect(1, 1, bounds.Dx()/2-1, bounds.Dy()-1)
 	rightPane := image.Rect((bounds.Dx()/2)+1, 1, bounds.Dx()-1, bounds.Dy()-1)
 
-	blackImg = image.NewGray(bounds)
+	blackImg = image.NewPaletted(bounds, color.Palette{color.White, color.Black})
 	draw.Draw(blackImg, blackImg.Bounds(), image.White, image.Point{}, draw.Src)
 	fontCtx := freetype.NewContext()
 	fontCtx.SetFont(fontData)
@@ -104,18 +105,18 @@ func BuildGUI(logger *zap.SugaredLogger, bounds image.Rectangle, measurement []n
 	}
 
 	// Red layer
-	redImg = image.NewGray(bounds)
+	redImg = image.NewPaletted(bounds, color.Palette{color.White, color.Black})
 	draw.Draw(redImg, redImg.Bounds(), image.White, image.Point{}, draw.Src)
 
 	// Humidity
 	fontCtx.SetFontSize(secondaryFontSize)
-	pt = freetype.Pt(leftPane.Min.X+20, 70+int(fontCtx.PointToFixed(secondaryFontSize)>>6))
+	pt = freetype.Pt(leftPane.Min.X+15, 70+int(fontCtx.PointToFixed(secondaryFontSize)>>6))
 	_, err = fontCtx.DrawString(fmt.Sprintf("%d%%", *measurement[0].ModuleReadings[0].Humidity), pt)
 	if err != nil {
 		logger.With("err", err).Fatal("could not draw 1st humidity string")
 	}
 
-	pt = freetype.Pt(rightPane.Min.X+20, 70+int(fontCtx.PointToFixed(secondaryFontSize)>>6))
+	pt = freetype.Pt(rightPane.Min.X+15, 70+int(fontCtx.PointToFixed(secondaryFontSize)>>6))
 	_, err = fontCtx.DrawString(fmt.Sprintf("%d%%", *measurement[0].StationReading.Humidity), pt)
 	if err != nil {
 		logger.With("err", err).Fatal("could not draw 2nd humidity string")
