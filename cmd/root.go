@@ -23,126 +23,145 @@ THE SOFTWARE.
 package cmd
 
 import (
-  "context"
-  "fmt"
-  "github.com/mikan/netatmo-weather-go"
-  "github.com/spf13/cobra"
-  "go.uber.org/zap"
-  "go.uber.org/zap/zapcore"
-  "os"
+	"fmt"
+	"image/png"
+	"os"
+	"weather-pi/epd"
+	"weather-pi/internal"
+	"weather-pi/netatmo"
+	"weather-pi/ui"
 
-  homedir "github.com/mitchellh/go-homedir"
-  "github.com/spf13/viper"
+	"github.com/spf13/cobra"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
+	homedir "github.com/mitchellh/go-homedir"
+	"github.com/spf13/viper"
 )
 
-
 var cfgFile string
+var appConfig internal.Config
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-  Use:   "weather-pie",
-  Short: "raspberry pi netatmo monitor station",
-  Long: `Program that will fetch information from the
+	Use:   "weather-pie",
+	Short: "raspberry pi netatmo monitor station",
+	Long: `Program that will fetch information from the
 Netatmo weather station and display current info on e-Paper
 display connected to a raspberry pi.`,
-  Run: RunApp,
+	Run: RunApp,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-  if err := rootCmd.Execute(); err != nil {
-    fmt.Println(err)
-    os.Exit(1)
-  }
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
 
 func init() {
-  cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(initConfig)
 
-  rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.weather-pie.yaml)")
-  rootCmd.PersistentFlags().String("clientId", "", "client ID used to connect to the Netatmo API")
-  rootCmd.PersistentFlags().String("secret", "", "secret used to connect to the Netatmo API")
-  rootCmd.PersistentFlags().String("username", "", "username of the Netatmo account")
-  rootCmd.PersistentFlags().String("password", "", "password of the Netatmo account")
-  rootCmd.PersistentFlags().String("logLevel", "info", "logger log level")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.weather-pie.yaml)")
+	rootCmd.PersistentFlags().String("clientId", "", "client ID used to connect to the Netatmo API")
+	rootCmd.PersistentFlags().String("secret", "", "secret used to connect to the Netatmo API")
+	rootCmd.PersistentFlags().String("username", "", "username of the Netatmo account")
+	rootCmd.PersistentFlags().String("password", "", "password of the Netatmo account")
+	rootCmd.PersistentFlags().Bool("testMode", false, "run the app in test mode (output test image without connecting to a device")
+	rootCmd.PersistentFlags().String("logLevel", "info", "logger log level")
 
-  if err := viper.BindPFlag("clientId", rootCmd.PersistentFlags().Lookup("clientId")); err != nil {
-    zap.S().With("err", err, "flag", "clientId").Fatal("could not bind flag to a config variable")
-  }
-  if err := viper.BindPFlag("secret", rootCmd.PersistentFlags().Lookup("secret")); err != nil {
-    zap.S().With("err", err, "flag", "secret").Fatal("could not bind flag to a config variable")
-  }
-  if err := viper.BindPFlag("username", rootCmd.PersistentFlags().Lookup("username")); err != nil {
-    zap.S().With("err", err, "flag", "username").Fatal("could not bind flag to a config variable")
-  }
-  if err := viper.BindPFlag("password", rootCmd.PersistentFlags().Lookup("password")); err != nil {
-    zap.S().With("err", err, "flag", "password").Fatal("could not bind flag to a config variable")
-  }
-  if err := viper.BindPFlag("logLevel", rootCmd.PersistentFlags().Lookup("logLevel")); err != nil {
-    zap.S().With("err", err, "flag", "logLevel").Fatal("could not bind flag to a config variable")
-  }
+	if err := viper.BindPFlag("clientId", rootCmd.PersistentFlags().Lookup("clientId")); err != nil {
+		zap.S().With("err", err, "flag", "clientId").Fatal("could not bind flag to a config variable")
+	}
+	if err := viper.BindPFlag("secret", rootCmd.PersistentFlags().Lookup("secret")); err != nil {
+		zap.S().With("err", err, "flag", "secret").Fatal("could not bind flag to a config variable")
+	}
+	if err := viper.BindPFlag("username", rootCmd.PersistentFlags().Lookup("username")); err != nil {
+		zap.S().With("err", err, "flag", "username").Fatal("could not bind flag to a config variable")
+	}
+	if err := viper.BindPFlag("password", rootCmd.PersistentFlags().Lookup("password")); err != nil {
+		zap.S().With("err", err, "flag", "password").Fatal("could not bind flag to a config variable")
+	}
+	if err := viper.BindPFlag("logLevel", rootCmd.PersistentFlags().Lookup("logLevel")); err != nil {
+		zap.S().With("err", err, "flag", "logLevel").Fatal("could not bind flag to a config variable")
+	}
+	if err := viper.BindPFlag("testMode", rootCmd.PersistentFlags().Lookup("testMode")); err != nil {
+		zap.S().With("err", err, "flag", "testMode").Fatal("could not bind flag to a config variable")
+	}
 }
-
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-  if cfgFile != "" {
-    // Use config file from the flag.
-    viper.SetConfigFile(cfgFile)
-  } else {
-    // Find home directory.
-    home, err := homedir.Dir()
-    if err != nil {
-      fmt.Println(err)
-      os.Exit(1)
-    }
+	if cfgFile != "" {
+		// Use config file from the flag.
+		viper.SetConfigFile(cfgFile)
+	} else {
+		// Find home directory.
+		home, err := homedir.Dir()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 
-    // Search config in home directory with name ".weather-pie" (without extension).
-    viper.AddConfigPath(home)
-    viper.SetConfigName(".weather-pie")
-  }
+		// Search config in home directory with name ".weather-pie" (without extension).
+		viper.AddConfigPath(home)
+		viper.SetConfigName(".weather-pie")
+	}
 
-  viper.AutomaticEnv() // read in environment variables that match
+	viper.AutomaticEnv() // read in environment variables that match
 
-  // If a config file is found, read it in.
-  if err := viper.ReadInConfig(); err == nil {
-    fmt.Println("Using config file:", viper.ConfigFileUsed())
-  }
+	// If a config file is found, read it in.
+	if err := viper.ReadInConfig(); err == nil {
+		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	}
+
+	if err := viper.Unmarshal(&appConfig); err != nil {
+		fmt.Println("could not unmarshal config")
+		os.Exit(2)
+	}
 }
 
 func RunApp(cmd *cobra.Command, args []string) {
-  config := zap.NewDevelopmentConfig()
-  config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-  logLevel := zap.NewAtomicLevel()
-  config.Level = logLevel
-  logger, _ := config.Build()
-  sugaredLogger := logger.Sugar()
-  if err := logLevel.UnmarshalText([]byte(viper.GetString("lovLevel"))); err != nil {
-    logLevel.SetLevel(zap.InfoLevel)
-  }
+	config := zap.NewDevelopmentConfig()
+	config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	logLevel := zap.NewAtomicLevel()
+	config.Level = logLevel
+	logger, _ := config.Build()
+	sugaredLogger := logger.Sugar()
+	if err := logLevel.UnmarshalText([]byte(appConfig.LogLevel)); err != nil {
+		logLevel.SetLevel(zap.InfoLevel)
+	}
 
-  client, err := netatmo.NewClient(
-    context.Background(),
-    viper.GetString("clientId"),
-    viper.GetString("secret"),
-    viper.GetString("username"),
-    viper.GetString("password"))
-  if err != nil {
-    sugaredLogger.With("err", err).Fatal("could not connect to the Netatmo API")
-  }
+	data, err := netatmo.FetchData(sugaredLogger, appConfig.Sources, appConfig.ClientId, appConfig.ClientSecret, appConfig.Username, appConfig.Password)
+	if err != nil {
+		sugaredLogger.With("err", err).Error("could not fetch data")
+		os.Exit(3)
+	}
 
-  device, _, err := client.GetStationsData()
+	e := epd.NewEpd2in13v3(sugaredLogger)
+	img, err := ui.BuildGUI(sugaredLogger, e.BoundsHorizontal(), data)
+	if err != nil {
+		sugaredLogger.With("err", err).Error("could not generate UI")
+		os.Exit(4)
+	}
 
-  if err != nil {
-    sugaredLogger.With("err", err).Fatal("could not fetch data from the Netatmo API")
-  }
-
-  measurement, err := client.GetMeasureByNewest(device[0].ID, device[0].Modules[0].ID)
-  if err != nil {
-    sugaredLogger.With("err", err).Fatal("could not fetch measurements")
-  }
-
-  fmt.Printf("Temperature: %.3f", *measurement.Temperature)
+	if appConfig.TestMode {
+		file, err := os.OpenFile("out_test.png", os.O_WRONLY|os.O_CREATE, 0666)
+		if err != nil {
+			sugaredLogger.With("err", err).Error("could not open test file for write")
+			os.Exit(5)
+		}
+		defer func(file *os.File) {
+			err := file.Close()
+			if err != nil {
+				sugaredLogger.With("err", err).Error("could not close a file")
+			}
+		}(file)
+		err = png.Encode(file, img)
+		if err != nil {
+			sugaredLogger.With("err", err).Error("could not encode the output file")
+		}
+	}
 }
-
