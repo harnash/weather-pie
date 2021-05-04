@@ -110,13 +110,13 @@ func BuildGUI(logger *zap.SugaredLogger, bounds image.Rectangle, measurement []n
 
 	// Humidity
 	fontCtx.SetFontSize(secondaryFontSize)
-	pt = freetype.Pt(leftPane.Min.X+15, 70+int(fontCtx.PointToFixed(secondaryFontSize)>>6))
+	pt = freetype.Pt(rightPane.Min.X+15, 70+int(fontCtx.PointToFixed(secondaryFontSize)>>6))
 	_, err = fontCtx.DrawString(fmt.Sprintf("%d%%", *measurement[0].ModuleReadings[0].Humidity), pt)
 	if err != nil {
 		logger.With("err", err).Fatal("could not draw 1st humidity string")
 	}
 
-	pt = freetype.Pt(rightPane.Min.X+15, 70+int(fontCtx.PointToFixed(secondaryFontSize)>>6))
+	pt = freetype.Pt(leftPane.Min.X+15, 70+int(fontCtx.PointToFixed(secondaryFontSize)>>6))
 	_, err = fontCtx.DrawString(fmt.Sprintf("%d%%", *measurement[0].StationReading.Humidity), pt)
 	if err != nil {
 		logger.With("err", err).Fatal("could not draw 2nd humidity string")
@@ -126,13 +126,13 @@ func BuildGUI(logger *zap.SugaredLogger, bounds image.Rectangle, measurement []n
 	fontCtx.SetFontSize(mainFontSize)
 	fontCtx.SetDst(redImg)
 	fontCtx.SetClip(redImg.Bounds())
-	pt = freetype.Pt(leftPane.Min.X, 15+int(fontCtx.PointToFixed(mainFontSize)>>6))
+	pt = freetype.Pt(rightPane.Min.X, 15+int(fontCtx.PointToFixed(mainFontSize)>>6))
 	_, err = fontCtx.DrawString(fmt.Sprintf("%.1f°C", *measurement[0].ModuleReadings[0].Temperature), pt)
 	if err != nil {
 		logger.With("err", err).Fatal("could not draw 1st temperature string")
 	}
 
-	pt = freetype.Pt(rightPane.Min.X, 15+int(fontCtx.PointToFixed(mainFontSize)>>6))
+	pt = freetype.Pt(leftPane.Min.X, 15+int(fontCtx.PointToFixed(mainFontSize)>>6))
 	_, err = fontCtx.DrawString(fmt.Sprintf("%.1f°C", *measurement[0].StationReading.Temperature), pt)
 	if err != nil {
 		logger.With("err", err).Fatal("could not draw 2nd temperature string")
@@ -140,25 +140,25 @@ func BuildGUI(logger *zap.SugaredLogger, bounds image.Rectangle, measurement []n
 
 	// Temperature ranges
 	fontCtx.SetFontSize(tertiaryFontSize)
-	pt = freetype.Pt(leftPane.Min.X, 55+int(fontCtx.PointToFixed(tertiaryFontSize)>>6))
+	pt = freetype.Pt(rightPane.Min.X, 55+int(fontCtx.PointToFixed(tertiaryFontSize)>>6))
 	_, err = fontCtx.DrawString(fmt.Sprintf("%.1f°C", *measurement[0].ModuleReadings[0].MinTemp), pt)
 	if err != nil {
 		logger.With("err", err).Fatal("could not draw 1st min temperature string")
 	}
 
-	pt = freetype.Pt(leftPane.Min.X+(leftPane.Dx()/2), 55+int(fontCtx.PointToFixed(tertiaryFontSize)>>6))
+	pt = freetype.Pt(rightPane.Min.X+(rightPane.Dx()/2), 55+int(fontCtx.PointToFixed(tertiaryFontSize)>>6))
 	_, err = fontCtx.DrawString(fmt.Sprintf("%.1f°C", *measurement[0].ModuleReadings[0].MaxTemp), pt)
 	if err != nil {
 		logger.With("err", err).Fatal("could not draw 1st max temperature string")
 	}
 
-	pt = freetype.Pt(rightPane.Min.X, 55+int(fontCtx.PointToFixed(tertiaryFontSize)>>6))
+	pt = freetype.Pt(leftPane.Min.X, 55+int(fontCtx.PointToFixed(tertiaryFontSize)>>6))
 	_, err = fontCtx.DrawString(fmt.Sprintf("%.1f°C", *measurement[0].StationReading.MinTemp), pt)
 	if err != nil {
 		logger.With("err", err).Fatal("could not draw 2nd min temperature string")
 	}
 
-	pt = freetype.Pt(rightPane.Min.X+(rightPane.Dx()/2), 55+int(fontCtx.PointToFixed(tertiaryFontSize)>>6))
+	pt = freetype.Pt(leftPane.Min.X+(leftPane.Dx()/2), 55+int(fontCtx.PointToFixed(tertiaryFontSize)>>6))
 	_, err = fontCtx.DrawString(fmt.Sprintf("%.1f°C", *measurement[0].StationReading.MaxTemp), pt)
 	if err != nil {
 		logger.With("err", err).Fatal("could not draw 2nd max temperature string")
