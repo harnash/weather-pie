@@ -3,6 +3,7 @@ module weather-pi
 go 1.16
 
 require (
+	github.com/BurntSushi/graphics-go v0.0.0-20160129215708-b43f31a4a966
 	github.com/MaxHalford/halfgone v0.0.0-20171017091812-482157b86ccb
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/mikan/netatmo-weather-go v0.0.1

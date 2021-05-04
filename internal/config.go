@@ -8,6 +8,7 @@ type Config struct {
 	Password     string   `yaml:"Password"`
 	Sources      []Source `yaml:"Sources"`
 	TestMode     bool     `yaml:"TestMode"`
+	Rotate180    bool     `yaml:"Rotate180"`
 }
 
 type Source struct {

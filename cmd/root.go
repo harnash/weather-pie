@@ -71,6 +71,7 @@ func init() {
 	rootCmd.PersistentFlags().String("password", "", "password of the Netatmo account")
 	rootCmd.PersistentFlags().Bool("testMode", false, "run the app in test mode (output test image without connecting to a device")
 	rootCmd.PersistentFlags().String("logLevel", "info", "logger log level")
+	rootCmd.PersistentFlags().Bool("rotate180", false, "should image be rotated 180 degrees")
 
 	if err := viper.BindPFlag("clientId", rootCmd.PersistentFlags().Lookup("clientId")); err != nil {
 		zap.S().With("err", err, "flag", "clientId").Fatal("could not bind flag to a config variable")
@@ -88,6 +89,9 @@ func init() {
 		zap.S().With("err", err, "flag", "logLevel").Fatal("could not bind flag to a config variable")
 	}
 	if err := viper.BindPFlag("testMode", rootCmd.PersistentFlags().Lookup("testMode")); err != nil {
+		zap.S().With("err", err, "flag", "testMode").Fatal("could not bind flag to a config variable")
+	}
+	if err := viper.BindPFlag("rotate180", rootCmd.PersistentFlags().Lookup("rotate180")); err != nil {
 		zap.S().With("err", err, "flag", "testMode").Fatal("could not bind flag to a config variable")
 	}
 }
@@ -145,6 +149,18 @@ func RunApp(cmd *cobra.Command, args []string) {
 	if err != nil {
 		sugaredLogger.With("err", err).Error("could not generate UI")
 		os.Exit(4)
+	}
+
+	if appConfig.Rotate180 {
+		bImage, err = ui.RotateImage(bImage)
+		if err != nil {
+			sugaredLogger.With("err", err).Fatal("could not rotate black image")
+		}
+
+		rImage, err = ui.RotateImage(rImage)
+		if err != nil {
+			sugaredLogger.With("err", err).Fatal("could not rotate red image")
+		}
 	}
 
 	if appConfig.TestMode {
