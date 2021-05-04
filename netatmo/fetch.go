@@ -14,6 +14,8 @@ type Reading struct {
 	Name        string
 	Timestamp   time.Time
 	Temperature *float64
+	MinTemp     *float64
+	MaxTemp     *float64
 	Humidity    *int
 }
 type Measurement struct {
@@ -72,6 +74,8 @@ func FetchData(logger *zap.SugaredLogger, sources []internal.Source, apiClientId
 				data.StationReading = &Reading{
 					Name:        device.StationName,
 					Temperature: device.DashboardData.Temperature,
+					MinTemp:     device.DashboardData.MinTemperature,
+					MaxTemp:     device.DashboardData.MinTemperature,
 					Humidity:    device.DashboardData.Humidity,
 					Timestamp:   time.Unix(device.DashboardData.UTCTime, 0),
 				}
@@ -84,6 +88,8 @@ func FetchData(logger *zap.SugaredLogger, sources []internal.Source, apiClientId
 							data.ModuleReadings = append(data.ModuleReadings, Reading{
 								Name:        module.ModuleName,
 								Temperature: module.DashboardData.Temperature,
+								MinTemp:     module.DashboardData.MinTemperature,
+								MaxTemp:     module.DashboardData.MinTemperature,
 								Humidity:    module.DashboardData.Humidity,
 								Timestamp:   time.Unix(module.DashboardData.UTCTime, 0)})
 							foundMeasurements++
