@@ -11,6 +11,7 @@ import (
 )
 
 type Reading struct {
+	Name        string
 	Timestamp   time.Time
 	Temperature *float64
 	Humidity    *int
@@ -69,6 +70,7 @@ func FetchData(logger *zap.SugaredLogger, sources []internal.Source, apiClientId
 				logger.With("station_name", device.StationName).Info("found station with a proper name")
 				data := Measurement{ModuleReadings: []Reading{}}
 				data.StationReading = &Reading{
+					Name:        device.StationName,
 					Temperature: device.DashboardData.Temperature,
 					Humidity:    device.DashboardData.Humidity,
 					Timestamp:   time.Unix(device.DashboardData.UTCTime, 0),
@@ -80,6 +82,7 @@ func FetchData(logger *zap.SugaredLogger, sources []internal.Source, apiClientId
 						if moduleName == module.ModuleName {
 							logger.With("module_name", module.ModuleName).Info("found module with a proper name - fetching data")
 							data.ModuleReadings = append(data.ModuleReadings, Reading{
+								Name:        module.ModuleName,
 								Temperature: module.DashboardData.Temperature,
 								Humidity:    module.DashboardData.Humidity,
 								Timestamp:   time.Unix(module.DashboardData.UTCTime, 0)})

@@ -141,14 +141,14 @@ func RunApp(cmd *cobra.Command, args []string) {
 	}
 
 	e := epd.NewEpd2in13v3(sugaredLogger)
-	img, err := ui.BuildGUI(sugaredLogger, e.BoundsHorizontal(), data)
+	bImage, rImage, err := ui.BuildGUI(sugaredLogger, e.BoundsHorizontal(), data)
 	if err != nil {
 		sugaredLogger.With("err", err).Error("could not generate UI")
 		os.Exit(4)
 	}
 
 	if appConfig.TestMode {
-		file, err := os.OpenFile("out_test.png", os.O_WRONLY|os.O_CREATE, 0666)
+		bFile, err := os.OpenFile("out_test_b.png", os.O_WRONLY|os.O_CREATE, 0666)
 		if err != nil {
 			sugaredLogger.With("err", err).Error("could not open test file for write")
 			os.Exit(5)
@@ -158,10 +158,54 @@ func RunApp(cmd *cobra.Command, args []string) {
 			if err != nil {
 				sugaredLogger.With("err", err).Error("could not close a file")
 			}
-		}(file)
-		err = png.Encode(file, img)
+		}(bFile)
+		err = png.Encode(bFile, bImage)
 		if err != nil {
 			sugaredLogger.With("err", err).Error("could not encode the output file")
+		}
+
+		rFile, err := os.OpenFile("out_test_r.png", os.O_WRONLY|os.O_CREATE, 0666)
+		if err != nil {
+			sugaredLogger.With("err", err).Error("could not open test file for write")
+			os.Exit(5)
+		}
+		defer func(file *os.File) {
+			err := file.Close()
+			if err != nil {
+				sugaredLogger.With("err", err).Error("could not close a file")
+			}
+		}(rFile)
+		err = png.Encode(rFile, rImage)
+		if err != nil {
+			sugaredLogger.With("err", err).Error("could not encode the output file")
+		}
+	} else {
+		defer func(e *epd.Dev2in13v3) {
+			if err := e.Close(); err != nil {
+				sugaredLogger.With("err", err).Error("could not close device")
+			}
+		}(e)
+		err := e.Init()
+		if err != nil {
+			sugaredLogger.With("err", err).Fatal("error while initializing device")
+		}
+
+		err = e.Clear()
+		if err != nil {
+			sugaredLogger.With("err", err).Fatal("error while clearing the device screen")
+		}
+
+		bBuff, err := epd.GetBuffer(sugaredLogger, bImage, e.BoundsHorizontal(), true)
+		if err != nil {
+			sugaredLogger.With("err", err).Fatal("could not generate buffer for black the GUI image")
+		}
+		rBuff, err := epd.GetBuffer(sugaredLogger, rImage, e.BoundsHorizontal(), true)
+		if err != nil {
+			sugaredLogger.With("err", err).Fatal("could not generate buffer for red the GUI image")
+		}
+		err = e.Display(bBuff, rBuff)
+		if err != nil {
+			sugaredLogger.With("err", err).Fatal("could not display GUI")
 		}
 	}
 }

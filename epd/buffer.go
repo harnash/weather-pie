@@ -1,16 +1,29 @@
 package epd
 
 import (
+	"image"
+	"image/color"
+
 	"github.com/MaxHalford/halfgone"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"image"
-	"image/color"
 )
 
+var blankBuffer []byte
+
+func GetBlankBuffer(logger *zap.SugaredLogger, bounds image.Rectangle) ([]byte, error) {
+	if blankBuffer != nil {
+		return blankBuffer, nil
+	}
+
+	img := image.NewGray(bounds)
+	blankBuffer, err := GetBuffer(logger, img, bounds, false)
+	return blankBuffer, err
+}
+
 func GetBuffer(logger *zap.SugaredLogger, img image.Image, deviceBounds image.Rectangle, dither bool) ([]byte, error) {
-	buff := make([]byte, (deviceBounds.Dx()/8) * deviceBounds.Dy())
-	for i:=0; i<len(buff); i++ {
+	buff := make([]byte, (deviceBounds.Dx()/8)*deviceBounds.Dy())
+	for i := 0; i < len(buff); i++ {
 		buff[i] = 0x00
 	}
 
@@ -31,7 +44,7 @@ func GetBuffer(logger *zap.SugaredLogger, img image.Image, deviceBounds image.Re
 		logger.Debug("displaying in vertical mode")
 		for y := 0; y < imageBounds.Max.Y; y++ {
 			for x := 0; x < imageBounds.Max.X; x++ {
-				pos := (x+y*deviceBounds.Dx())/8
+				pos := (x + y*deviceBounds.Dx()) / 8
 				if pos >= len(buff) {
 					continue
 				}
@@ -48,7 +61,7 @@ func GetBuffer(logger *zap.SugaredLogger, img image.Image, deviceBounds image.Re
 				newX := y
 				newY := deviceBounds.Dy() - x - 1
 
-				pos := (newX+newY*deviceBounds.Dx())/8
+				pos := (newX + newY*deviceBounds.Dx()) / 8
 				if pos >= len(buff) {
 					continue
 				}
