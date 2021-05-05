@@ -99,7 +99,13 @@ func BuildGUI(logger *zap.SugaredLogger, bounds image.Rectangle, measurement []n
 	}
 
 	pt = freetype.Pt(leftPane.Min.X, 90+int(fontCtx.PointToFixed(statusFontSize)>>6))
-	_, err = fontCtx.DrawString(fmt.Sprintf("Ts: %s", measurement[0].StationReading.Timestamp.Format(time.ANSIC)), pt)
+	var timeStamp time.Time
+	if measurement[0].StationReading.Timestamp.After(measurement[0].ModuleReadings[0].Timestamp) {
+		timeStamp = measurement[0].StationReading.Timestamp
+	} else {
+		timeStamp = measurement[0].ModuleReadings[0].Timestamp
+	}
+	_, err = fontCtx.DrawString(fmt.Sprintf("Ts: %s", timeStamp.Format(time.ANSIC)), pt)
 	if err != nil {
 		logger.With("err", err).Fatal("could not draw timestamp")
 	}
