@@ -105,7 +105,7 @@ func BuildGUI(logger *zap.SugaredLogger, bounds image.Rectangle, measurement []n
 	} else {
 		timeStamp = measurement[0].ModuleReadings[0].Timestamp
 	}
-	_, err = fontCtx.DrawString(fmt.Sprintf("Ts: %s", timeStamp.Format(time.ANSIC)), pt)
+	_, err = fontCtx.DrawString(fmt.Sprintf("Ts: %s", timeStamp.Format(time.RFC1123)), pt)
 	if err != nil {
 		logger.With("err", err).Fatal("could not draw timestamp")
 	}
