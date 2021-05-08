@@ -1,6 +1,6 @@
 build:
 	@echo "Building app"
-	@GOOS=linux GOARCH=arm GOARM=5 go build -ldflags="-s" -o ./bin/weather-pie main.go
+	@GOOS=linux GOARCH=arm GOARM=5 CGO_ENABLED=0 go build -ldflags="-s" -o ./bin/weather-pie main.go
 pack:
 	@echo "Compressing"
 	@upx -9 -k ./bin/weather-pie
