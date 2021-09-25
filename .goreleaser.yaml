@@ -1,0 +1,19 @@
+project_name: weather-pie
+builds:
+  - env: [CGO_ENABLED=0]
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+nfpms:
+  - maintainer: Łukasz "harnash" Harsimowicz <dev@harnash.eu>
+    description: Small app which displays measurements from Netatmo Weather stations on raspberry pie's e-ink display.
+    homepage: https://github.com/harnash/weather-pie
+    license: Apache 2.0
+    formats:
+      - deb
+      - rpm
+      - apk
