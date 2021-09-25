@@ -28,7 +28,7 @@ type ModuleInfo struct {
 	ModuleId string
 }
 
-func FetchData(logger *zap.SugaredLogger, sources []internal.Source, apiClientId, apiSecret, username, password string) ([]Measurement, error) {
+func FetchData(logger *zap.SugaredLogger, sources []internal.Source, apiClientId, apiSecret, username, password string, since time.Time) ([]Measurement, error) {
 	if len(apiClientId) == 0 {
 		return nil, errors.New("empty API client ID")
 	}
@@ -64,12 +64,15 @@ func FetchData(logger *zap.SugaredLogger, sources []internal.Source, apiClientId
 	logger.With("num_devices", len(devices)).Debug("got response with stations data")
 
 	foundMeasurements := 0
+	now := time.Now().UTC()
 	var measurements []Measurement
 	for _, device := range devices {
 		for _, source := range sources {
-			logger.With("station_name", device.StationName).Debug("found station name")
+			log := logger.With("station_name", device.StationName)
+			log.Debug("found station name")
 			if device.StationName == source.StationName {
-				logger.With("station_name", device.StationName).Info("found station with a proper name")
+				log = log.With("station_name", device.StationName, "device_id", device.ID)
+				log.Info("found station with a proper name")
 				data := Measurement{ModuleReadings: []Reading{}}
 				data.StationReading = &Reading{
 					Name:        device.StationName,
@@ -81,18 +84,37 @@ func FetchData(logger *zap.SugaredLogger, sources []internal.Source, apiClientId
 				}
 
 				for _, module := range device.Modules {
-					logger.With("module_name", module.ModuleName).Debug("found module name")
+					log.Debug("found module name")
 					for _, moduleName := range source.ModuleNames {
 						if moduleName == module.ModuleName {
-							logger.With("module_name", module.ModuleName).Info("found module with a proper name - fetching data")
-							data.ModuleReadings = append(data.ModuleReadings, Reading{
-								Name:        module.ModuleName,
-								Temperature: module.DashboardData.Temperature,
-								MinTemp:     module.DashboardData.MinTemperature,
-								MaxTemp:     module.DashboardData.MinTemperature,
-								Humidity:    module.DashboardData.Humidity,
-								Timestamp:   time.Unix(module.DashboardData.UTCTime, 0)})
-							foundMeasurements++
+							log.With("since", since.Unix(), "until", now.Unix()).Info("found module with a proper name - fetching data")
+							measurements, err := client.GetMeasureByTimeRange(device.ID, module.ID, since.Unix(), now.Unix())
+							if err != nil || len(measurements) == 0 {
+								logger.With("error", err).Error("could not fetch measurements")
+								continue
+							}
+							log.With("num", len(measurements)).Info("fetched measurements")
+							var minTemp *float64
+							var maxTemp *float64
+							for idx, measure := range measurements {
+								if idx == 0 || *minTemp > *measure.Temperature {
+									minTemp = measure.Temperature
+								}
+								if idx == 0 || *maxTemp < *measure.Temperature {
+									maxTemp = measure.Temperature
+								}
+								if idx == len(measurements)-1 {
+									data.ModuleReadings = append(data.ModuleReadings, Reading{
+										Name:        module.ModuleName,
+										Temperature: measure.Temperature,
+										MinTemp:     minTemp,
+										MaxTemp:     maxTemp,
+										Humidity:    module.DashboardData.Humidity,
+										Timestamp:   time.Unix(module.LastSeenTime, 0).Local(),
+									})
+									foundMeasurements++
+								}
+							}
 						}
 					}
 				}
@@ -100,7 +122,7 @@ func FetchData(logger *zap.SugaredLogger, sources []internal.Source, apiClientId
 			}
 		}
 	}
-	logger.With("found_measurements", foundMeasurements).Info("finished fetching measurement data")
+	logger.With("num", foundMeasurements).Info("finished fetching measurement data")
 
 	return measurements, nil
 }

@@ -1,0 +1,121 @@
+project_name: weather-pie
+release:
+  github:
+    owner: harnash
+    name: weather-pie
+  name_template: '{{.Tag}}'
+milestones:
+- repo:
+    owner: harnash
+    name: weather-pie
+  name_template: '{{ .Tag }}'
+scoop:
+  name: weather-pie
+  commit_author:
+    name: goreleaserbot
+    email: goreleaser@carlosbecker.com
+  commit_msg_template: Scoop update for {{ .ProjectName }} version {{ .Tag }}
+builds:
+- id: weather-pie
+  goos:
+  - linux
+  - windows
+  - darwin
+  goarch:
+  - amd64
+  - arm64
+  goarm:
+  - "6"
+  gomips:
+  - hardfloat
+  targets:
+  - linux_amd64
+  - linux_arm64
+  - windows_amd64
+  - windows_arm64
+  - darwin_amd64
+  - darwin_arm64
+  dir: .
+  main: .
+  ldflags:
+  - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+    -X main.builtBy=goreleaser
+  binary: weather-pie
+  env:
+  - CGO_ENABLED=0
+  builder: go
+  gobinary: go
+archives:
+- id: default
+  builds:
+  - weather-pie
+  name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm
+    }}v{{ .Arm }}{{ end }}{{ if .Mips }}_{{ .Mips }}{{ end }}'
+  format: tar.gz
+  files:
+  - src: license*
+  - src: LICENSE*
+  - src: readme*
+  - src: README*
+  - src: changelog*
+  - src: CHANGELOG*
+  allow_different_binary_count: false
+nfpms:
+- file_name_template: '{{ .PackageName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if
+    .Arm }}v{{ .Arm }}{{ end }}{{ if .Mips }}_{{ .Mips }}{{ end }}'
+  package_name: weather-pie
+  id: default
+  builds:
+  - weather-pie
+  formats:
+  - deb
+  - rpm
+  - apk
+  homepage: https://github.com/harnash/weather-pie
+  maintainer: Łukasz "harnash" Harsimowicz <dev@harnash.eu>
+  description: Small app which displays measurements from Netatmo Weather stations
+    on raspberry pie's e-ink display.
+  license: Apache 2.0
+  bindir: /usr/local/bin
+snapshot:
+  name_template: '{{ .Version }}-SNAPSHOT-{{ .ShortCommit }}'
+checksum:
+  name_template: '{{ .ProjectName }}_{{ .Version }}_checksums.txt'
+  algorithm: sha256
+dist: dist
+env_files:
+  github_token: ~/.config/goreleaser/github_token
+  gitlab_token: ~/.config/goreleaser/gitlab_token
+  gitea_token: ~/.config/goreleaser/gitea_token
+source:
+  name_template: '{{ .ProjectName }}-{{ .Version }}'
+  format: tar.gz
+gomod:
+  gobinary: go
+announce:
+  twitter:
+    message_template: '{{ .ProjectName }} {{ .Tag }} is out! Check it out at {{ .GitURL
+      }}/releases/tag/{{ .Tag }}'
+  reddit:
+    title_template: '{{ .ProjectName }} {{ .Tag }} is out!'
+    url_template: '{{ .GitURL }}/releases/tag/{{ .Tag }}'
+  slack:
+    message_template: '{{ .ProjectName }} {{ .Tag }} is out! Check it out at {{ .GitURL
+      }}/releases/tag/{{ .Tag }}'
+    username: GoReleaser
+  discord:
+    message_template: '{{ .ProjectName }} {{ .Tag }} is out! Check it out at {{ .GitURL
+      }}/releases/tag/{{ .Tag }}'
+    author: GoReleaser
+    color: "3888754"
+    icon_url: https://goreleaser.com/static/avatar.png
+  teams:
+    title_template: '{{ .ProjectName }} {{ .Tag }} is out!'
+    message_template: '{{ .ProjectName }} {{ .Tag }} is out! Check it out at {{ .GitURL
+      }}/releases/tag/{{ .Tag }}'
+    color: '#2D313E'
+    icon_url: https://goreleaser.com/static/avatar.png
+github_urls:
+  download: https://github.com
+gitlab_urls:
+  download: https://gitlab.com

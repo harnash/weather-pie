@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"image/png"
 	"os"
+	"time"
 	"weather-pi/epd"
 	"weather-pi/internal"
 	"weather-pi/netatmo"
@@ -72,6 +73,7 @@ func init() {
 	rootCmd.PersistentFlags().Bool("testMode", false, "run the app in test mode (output test image without connecting to a device")
 	rootCmd.PersistentFlags().String("logLevel", "info", "logger log level")
 	rootCmd.PersistentFlags().Bool("rotate180", false, "should image be rotated 180 degrees")
+	rootCmd.PersistentFlags().Duration("timeWindow", 2*time.Hour, "how large would be the time window to fetch measurements (min/max)")
 
 	if err := viper.BindPFlag("clientId", rootCmd.PersistentFlags().Lookup("clientId")); err != nil {
 		zap.S().With("err", err, "flag", "clientId").Fatal("could not bind flag to a config variable")
@@ -92,7 +94,10 @@ func init() {
 		zap.S().With("err", err, "flag", "testMode").Fatal("could not bind flag to a config variable")
 	}
 	if err := viper.BindPFlag("rotate180", rootCmd.PersistentFlags().Lookup("rotate180")); err != nil {
-		zap.S().With("err", err, "flag", "testMode").Fatal("could not bind flag to a config variable")
+		zap.S().With("err", err, "flag", "rotate180").Fatal("could not bind flag to a config variable")
+	}
+	if err := viper.BindPFlag("timeWindow", rootCmd.PersistentFlags().Lookup("timeWindow")); err != nil {
+		zap.S().With("err", err, "flag", "timeWindow").Fatal("could not bind flag to a config variable")
 	}
 }
 
@@ -138,7 +143,8 @@ func RunApp(cmd *cobra.Command, args []string) {
 		logLevel.SetLevel(zap.InfoLevel)
 	}
 
-	data, err := netatmo.FetchData(sugaredLogger, appConfig.Sources, appConfig.ClientId, appConfig.ClientSecret, appConfig.Username, appConfig.Password)
+	tm := time.Now().UTC().Add(-appConfig.TimeWindow)
+	data, err := netatmo.FetchData(sugaredLogger, appConfig.Sources, appConfig.ClientId, appConfig.ClientSecret, appConfig.Username, appConfig.Password, tm)
 	if err != nil {
 		sugaredLogger.With("err", err).Error("could not fetch data")
 		os.Exit(3)

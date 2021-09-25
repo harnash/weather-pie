@@ -23,7 +23,7 @@ const tertiaryFontSize = 8
 const statusFontSize = 7
 
 func BuildGUI(logger *zap.SugaredLogger, bounds image.Rectangle, measurement []netatmo.Measurement) (blackImg draw.Image, redImg draw.Image, err error) {
-	if len(measurement) != 1 {
+	if len(measurement) != 1 || len(measurement[0].ModuleReadings) == 0 {
 		err = errors.New("measurements incomplete")
 		return
 	}
