@@ -97,10 +97,14 @@ func FetchData(logger *zap.SugaredLogger, sources []internal.Source, apiClientId
 							var minTemp *float64
 							var maxTemp *float64
 							for idx, measure := range measurements {
-								if idx == 0 || *minTemp > *measure.Temperature {
+								if measure.Temperature == nil {
+									continue
+								}
+
+								if idx == 0 || minTemp == nil || *minTemp > *measure.Temperature {
 									minTemp = measure.Temperature
 								}
-								if idx == 0 || *maxTemp < *measure.Temperature {
+								if idx == 0 || maxTemp == nil || *maxTemp < *measure.Temperature {
 									maxTemp = measure.Temperature
 								}
 								if idx == len(measurements)-1 {
