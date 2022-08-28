@@ -2,6 +2,7 @@ package netatmo
 
 import (
 	"context"
+	"strings"
 	"time"
 	"weather-pi/internal"
 
@@ -84,9 +85,9 @@ func FetchData(logger *zap.SugaredLogger, sources []internal.Source, apiClientId
 				}
 
 				for _, module := range device.Modules {
-					log.Debug("found module name")
+					log.With("module_name", module.ModuleName, "configured_names", source.ModuleNames).Debug("found module name")
 					for _, moduleName := range source.ModuleNames {
-						if moduleName == module.ModuleName {
+						if strings.TrimSpace(moduleName) == strings.TrimSpace(module.ModuleName) {
 							log.With("since", since.Unix(), "until", now.Unix()).Info("found module with a proper name - fetching data")
 							measurements, err := client.GetMeasureByTimeRange(device.ID, module.ID, since.Unix(), now.Unix())
 							if err != nil || len(measurements) == 0 {
