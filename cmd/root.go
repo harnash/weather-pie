@@ -137,6 +137,8 @@ func RunApp(cmd *cobra.Command, args []string) {
 	config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	logLevel := zap.NewAtomicLevel()
 	config.Level = logLevel
+	config.OutputPaths = []string{"stdout"}
+	config.ErrorOutputPaths = []string{"stderr"}
 	logger, _ := config.Build()
 	sugaredLogger := logger.Sugar()
 	if err := logLevel.UnmarshalText([]byte(appConfig.LogLevel)); err != nil {
