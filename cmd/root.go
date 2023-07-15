@@ -68,8 +68,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.weather-pie.yaml)")
 	rootCmd.PersistentFlags().String("clientId", "", "client ID used to connect to the Netatmo API")
 	rootCmd.PersistentFlags().String("secret", "", "secret used to connect to the Netatmo API")
-	rootCmd.PersistentFlags().String("username", "", "username of the Netatmo account")
-	rootCmd.PersistentFlags().String("password", "", "password of the Netatmo account")
+	rootCmd.PersistentFlags().String("token", "", "OAuth token generated for the API")
 	rootCmd.PersistentFlags().Bool("testMode", false, "run the app in test mode (output test image without connecting to a device")
 	rootCmd.PersistentFlags().String("logLevel", "info", "logger log level")
 	rootCmd.PersistentFlags().Bool("rotate180", false, "should image be rotated 180 degrees")
@@ -81,11 +80,8 @@ func init() {
 	if err := viper.BindPFlag("secret", rootCmd.PersistentFlags().Lookup("secret")); err != nil {
 		zap.S().With("err", err, "flag", "secret").Fatal("could not bind flag to a config variable")
 	}
-	if err := viper.BindPFlag("username", rootCmd.PersistentFlags().Lookup("username")); err != nil {
-		zap.S().With("err", err, "flag", "username").Fatal("could not bind flag to a config variable")
-	}
-	if err := viper.BindPFlag("password", rootCmd.PersistentFlags().Lookup("password")); err != nil {
-		zap.S().With("err", err, "flag", "password").Fatal("could not bind flag to a config variable")
+	if err := viper.BindPFlag("token", rootCmd.PersistentFlags().Lookup("token")); err != nil {
+		zap.S().With("err", err, "flag", "token").Fatal("could not bind flag to a config variable")
 	}
 	if err := viper.BindPFlag("logLevel", rootCmd.PersistentFlags().Lookup("logLevel")); err != nil {
 		zap.S().With("err", err, "flag", "logLevel").Fatal("could not bind flag to a config variable")
@@ -146,7 +142,7 @@ func RunApp(cmd *cobra.Command, args []string) {
 	}
 
 	tm := time.Now().UTC().Add(-appConfig.TimeWindow)
-	data, err := netatmo.FetchData(sugaredLogger, appConfig.Sources, appConfig.ClientId, appConfig.ClientSecret, appConfig.Username, appConfig.Password, tm)
+	data, err := netatmo.FetchData(sugaredLogger, appConfig.Sources, appConfig.ClientId, appConfig.ClientSecret, appConfig.Token, tm)
 	if err != nil {
 		sugaredLogger.With("err", err).Error("could not fetch data")
 		os.Exit(3)
