@@ -7,6 +7,7 @@ type Config struct {
 	ClientId     string        `yaml:"ClientId"`
 	ClientSecret string        `yaml:"ClientSecret"`
 	Token        string        `yaml:"Token"`
+	RefreshToken string        `yaml:"RefreshToken"`
 	Sources      []Source      `yaml:"Sources"`
 	TestMode     bool          `yaml:"TestMode"`
 	Rotate180    bool          `yaml:"Rotate180"`

@@ -65,10 +65,11 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.weather-pie.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is /etc/weather-pie/config.yaml)")
 	rootCmd.PersistentFlags().String("clientId", "", "client ID used to connect to the Netatmo API")
 	rootCmd.PersistentFlags().String("secret", "", "secret used to connect to the Netatmo API")
 	rootCmd.PersistentFlags().String("token", "", "OAuth token generated for the API")
+	rootCmd.PersistentFlags().String("refreshToken", "", "OAuth refresh token generated for the API")
 	rootCmd.PersistentFlags().Bool("testMode", false, "run the app in test mode (output test image without connecting to a device")
 	rootCmd.PersistentFlags().String("logLevel", "info", "logger log level")
 	rootCmd.PersistentFlags().Bool("rotate180", false, "should image be rotated 180 degrees")
@@ -81,6 +82,9 @@ func init() {
 		zap.S().With("err", err, "flag", "secret").Fatal("could not bind flag to a config variable")
 	}
 	if err := viper.BindPFlag("token", rootCmd.PersistentFlags().Lookup("token")); err != nil {
+		zap.S().With("err", err, "flag", "token").Fatal("could not bind flag to a config variable")
+	}
+	if err := viper.BindPFlag("refreshToken", rootCmd.PersistentFlags().Lookup("refreshToken")); err != nil {
 		zap.S().With("err", err, "flag", "token").Fatal("could not bind flag to a config variable")
 	}
 	if err := viper.BindPFlag("logLevel", rootCmd.PersistentFlags().Lookup("logLevel")); err != nil {
@@ -99,20 +103,22 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+	// Find home directory.
+	home, err := homedir.Dir()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	// Search config in home directory with name ".weather-pie" (without extension).
+	viper.AddConfigPath("/etc/weather-pie/")
+	viper.AddConfigPath(home)
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, err := homedir.Dir()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		// Search config in home directory with name ".weather-pie" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".weather-pie")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
@@ -142,7 +148,7 @@ func RunApp(cmd *cobra.Command, args []string) {
 	}
 
 	tm := time.Now().UTC().Add(-appConfig.TimeWindow)
-	data, err := netatmo.FetchData(sugaredLogger, appConfig.Sources, appConfig.ClientId, appConfig.ClientSecret, appConfig.Token, tm)
+	data, err := netatmo.FetchData(sugaredLogger, appConfig.Sources, appConfig.ClientId, appConfig.ClientSecret, appConfig.Token, appConfig.RefreshToken, tm)
 	if err != nil {
 		sugaredLogger.With("err", err).Error("could not fetch data")
 		os.Exit(3)

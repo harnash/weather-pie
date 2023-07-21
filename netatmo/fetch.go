@@ -6,6 +6,8 @@ import (
 	"time"
 	"weather-pi/internal"
 
+	"github.com/spf13/viper"
+
 	"golang.org/x/oauth2"
 
 	"github.com/hekmon/go-netatmo/weather"
@@ -33,7 +35,7 @@ type ModuleInfo struct {
 	ModuleId string
 }
 
-func FetchData(logger *zap.SugaredLogger, sources []internal.Source, apiClientId, apiSecret, token string, since time.Time) ([]Measurement, error) {
+func FetchData(logger *zap.SugaredLogger, sources []internal.Source, apiClientId, apiSecret, token, refreshToken string, since time.Time) ([]Measurement, error) {
 	if len(apiClientId) == 0 {
 		return nil, errors.New("empty API client ID")
 	}
@@ -42,6 +44,9 @@ func FetchData(logger *zap.SugaredLogger, sources []internal.Source, apiClientId
 	}
 	if len(token) == 0 {
 		return nil, errors.New("empty token")
+	}
+	if len(refreshToken) == 0 {
+		return nil, errors.New("empty refreshToken")
 	}
 	if len(sources) == 0 {
 		return nil, errors.New("no measurements to fetch")
@@ -54,15 +59,22 @@ func FetchData(logger *zap.SugaredLogger, sources []internal.Source, apiClientId
 		Scopes:       []string{"read_station"},
 	}
 	oauthConfig := netatmo.GenerateOAuth2Config(oauthBaseConfig)
-	oAuthTokens := &oauth2.Token{AccessToken: token}
-	authedClient, err := netatmo.NewClientWithTokens(context.Background(), oauthConfig, oAuthTokens, nil)
+	oAuthTokens := &oauth2.Token{AccessToken: token, RefreshToken: refreshToken}
+	authedClient, err := netatmo.NewClientWithTokens(context.TODO(), oauthConfig, oAuthTokens, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not connect to the Netatmo API")
 	}
 
+	tokens := authedClient.GetTokens()
+	viper.Set("token", tokens.AccessToken)
+	viper.Set("refreshToken", tokens.RefreshToken)
+	if err = viper.WriteConfig(); err != nil {
+		logger.With("error", err).Error("could not save generated OAuth tokens")
+	}
+
 	logger.Info("fetching stations data")
 	client := weather.New(authedClient)
-	devices, _, _, err := client.GetStationData(context.Background(), weather.GetStationDataParameters{})
+	devices, _, _, err := client.GetStationData(context.TODO(), weather.GetStationDataParameters{})
 	if err != nil {
 		return nil, errors.Wrap(err, "could not fetch data from the Netatmo API")
 	}
