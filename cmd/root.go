@@ -148,7 +148,7 @@ func RunApp(cmd *cobra.Command, args []string) {
 	}
 
 	tm := time.Now().UTC().Add(-appConfig.TimeWindow)
-	data, err := netatmo.FetchData(sugaredLogger, appConfig.Sources, appConfig.ClientId, appConfig.ClientSecret, appConfig.Token, appConfig.RefreshToken, tm)
+	data, err := netatmo.FetchData(sugaredLogger, appConfig.Sources, appConfig.ClientId, appConfig.ClientSecret, appConfig.Token, appConfig.RefreshToken, appConfig.TokenExpiry, tm)
 	if err != nil {
 		sugaredLogger.With("err", err).Error("could not fetch data")
 		os.Exit(3)

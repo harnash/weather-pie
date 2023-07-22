@@ -35,7 +35,7 @@ type ModuleInfo struct {
 	ModuleId string
 }
 
-func FetchData(logger *zap.SugaredLogger, sources []internal.Source, apiClientId, apiSecret, token, refreshToken string, since time.Time) ([]Measurement, error) {
+func FetchData(logger *zap.SugaredLogger, sources []internal.Source, apiClientId, apiSecret, token, refreshToken string, tokenExpiry, since time.Time) ([]Measurement, error) {
 	if len(apiClientId) == 0 {
 		return nil, errors.New("empty API client ID")
 	}
@@ -59,7 +59,7 @@ func FetchData(logger *zap.SugaredLogger, sources []internal.Source, apiClientId
 		Scopes:       []string{"read_station"},
 	}
 	oauthConfig := netatmo.GenerateOAuth2Config(oauthBaseConfig)
-	oAuthTokens := &oauth2.Token{AccessToken: token, RefreshToken: refreshToken}
+	oAuthTokens := &oauth2.Token{AccessToken: token, RefreshToken: refreshToken, Expiry: tokenExpiry}
 	authedClient, err := netatmo.NewClientWithTokens(context.TODO(), oauthConfig, oAuthTokens, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not connect to the Netatmo API")
@@ -68,6 +68,7 @@ func FetchData(logger *zap.SugaredLogger, sources []internal.Source, apiClientId
 	tokens := authedClient.GetTokens()
 	viper.Set("token", tokens.AccessToken)
 	viper.Set("refreshToken", tokens.RefreshToken)
+	viper.Set("tokenExpiry", tokens.Expiry)
 	if err = viper.WriteConfig(); err != nil {
 		logger.With("error", err).Error("could not save generated OAuth tokens")
 	}

@@ -8,6 +8,7 @@ type Config struct {
 	ClientSecret string        `yaml:"ClientSecret"`
 	Token        string        `yaml:"Token"`
 	RefreshToken string        `yaml:"RefreshToken"`
+	TokenExpiry  time.Time     `yaml:"TokenExpiry"`
 	Sources      []Source      `yaml:"Sources"`
 	TestMode     bool          `yaml:"TestMode"`
 	Rotate180    bool          `yaml:"Rotate180"`
