@@ -65,19 +65,6 @@ func FetchData(logger *zap.SugaredLogger, sources []internal.Source, apiClientId
 		return nil, errors.Wrap(err, "could not connect to the Netatmo API")
 	}
 
-	tokens := authedClient.GetTokens()
-	if token != tokens.AccessToken || refreshToken != tokens.RefreshToken {
-		viper.Set("old_token", token)
-		viper.Set("old_refresh", refreshToken)
-		logger.With("old_token", token, "new_token", tokens.AccessToken, "old_refresh", refreshToken, "new_refresh", tokens.RefreshToken, "new_expiry", tokens.Expiry)
-	}
-	viper.Set("token", tokens.AccessToken)
-	viper.Set("refreshToken", tokens.RefreshToken)
-	viper.Set("tokenExpiry", tokens.Expiry.Format(time.RFC3339))
-	if err = viper.WriteConfig(); err != nil {
-		logger.With("error", err).Error("could not save generated OAuth tokens")
-	}
-
 	logger.Info("fetching stations data")
 	client := weather.New(authedClient)
 	devices, _, _, err := client.GetStationData(context.TODO(), weather.GetStationDataParameters{})
@@ -85,6 +72,20 @@ func FetchData(logger *zap.SugaredLogger, sources []internal.Source, apiClientId
 		return nil, errors.Wrap(err, "could not fetch data from the Netatmo API")
 	}
 	logger.With("num_devices", len(devices.Devices)).Debug("got response with stations data")
+
+	tokens := authedClient.GetTokens()
+	if token != tokens.AccessToken || refreshToken != tokens.RefreshToken {
+		viper.Set("old_token", token)
+		viper.Set("old_refresh", refreshToken)
+		viper.Set("token", tokens.AccessToken)
+		viper.Set("refreshToken", tokens.RefreshToken)
+		logger.With("old_token", token, "new_token", tokens.AccessToken, "old_refresh", refreshToken, "new_refresh", tokens.RefreshToken, "new_expiry", tokens.Expiry)
+	}
+
+	viper.Set("tokenExpiry", tokens.Expiry.Format(time.RFC3339))
+	if err = viper.WriteConfig(); err != nil {
+		logger.With("error", err).Error("could not save generated OAuth tokens")
+	}
 
 	foundMeasurements := 0
 	now := time.Now().UTC()
