@@ -66,6 +66,11 @@ func FetchData(logger *zap.SugaredLogger, sources []internal.Source, apiClientId
 	}
 
 	tokens := authedClient.GetTokens()
+	if token != tokens.AccessToken || refreshToken != tokens.RefreshToken {
+		viper.Set("old_token", token)
+		viper.Set("old_refresh", refreshToken)
+		logger.With("old_token", token, "new_token", tokens.AccessToken, "old_refresh", refreshToken, "new_refresh", tokens.RefreshToken, "new_expiry", tokens.Expiry)
+	}
 	viper.Set("token", tokens.AccessToken)
 	viper.Set("refreshToken", tokens.RefreshToken)
 	viper.Set("tokenExpiry", tokens.Expiry.Format(time.RFC3339))
