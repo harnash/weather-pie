@@ -80,11 +80,11 @@ func FetchData(logger *zap.SugaredLogger, sources []internal.Source, apiClientId
 		viper.Set("token", tokens.AccessToken)
 		viper.Set("refreshToken", tokens.RefreshToken)
 		logger.With("old_token", token, "new_token", tokens.AccessToken, "old_refresh", refreshToken, "new_refresh", tokens.RefreshToken, "new_expiry", tokens.Expiry)
-	}
 
-	viper.Set("tokenExpiry", tokens.Expiry.Format(time.RFC3339))
-	if err = viper.WriteConfig(); err != nil {
-		logger.With("error", err).Error("could not save generated OAuth tokens")
+		viper.Set("tokenExpiry", tokens.Expiry.Format(time.RFC3339))
+		if err = viper.WriteConfig(); err != nil {
+			logger.With("error", err).Error("could not save generated OAuth tokens")
+		}
 	}
 
 	foundMeasurements := 0
