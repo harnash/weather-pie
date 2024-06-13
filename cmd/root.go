@@ -150,7 +150,7 @@ func RunApp(cmd *cobra.Command, args []string) {
 	tm := time.Now().UTC().Add(-appConfig.TimeWindow)
 	var tokenExpiry time.Time
 	if appConfig.TokenExpiry == "" {
-		tokenExpiry = time.Now().Add(time.Hour)
+		tokenExpiry = time.Now()
 	} else {
 		var err error
 		tokenExpiry, err = time.Parse(time.RFC3339, appConfig.TokenExpiry)

@@ -59,8 +59,23 @@ func FetchData(logger *zap.SugaredLogger, sources []internal.Source, apiClientId
 		Scopes:       []string{"read_station"},
 	}
 	oauthConfig := netatmo.GenerateOAuth2Config(oauthBaseConfig)
-	oAuthTokens := &oauth2.Token{AccessToken: token, RefreshToken: refreshToken, Expiry: tokenExpiry}
-	authedClient, err := netatmo.NewClientWithTokens(context.TODO(), oauthConfig, oAuthTokens, nil)
+	prevToken := &oauth2.Token{AccessToken: token, RefreshToken: refreshToken, Expiry: tokenExpiry}
+	tokenSource := oauthConfig.TokenSource(context.TODO(), prevToken)
+	curToken, err := tokenSource.Token()
+	if err != nil {
+		return nil, errors.Wrap(err, "could not refresh the token")
+	}
+	if curToken.AccessToken != prevToken.AccessToken {
+		viper.Set("token", curToken.AccessToken)
+		viper.Set("refreshToken", curToken.RefreshToken)
+		logger.With("old_token", token, "new_token", curToken.AccessToken, "old_refresh", refreshToken, "new_refresh", curToken.RefreshToken, "new_expiry", curToken.Expiry)
+
+		viper.Set("tokenExpiry", curToken.Expiry.Format(time.RFC3339))
+		if err = viper.WriteConfig(); err != nil {
+			logger.With("error", err).Error("could not save generated OAuth tokens")
+		}
+	}
+	authedClient, err := netatmo.NewClientWithTokens(context.TODO(), oauthConfig, curToken, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not connect to the Netatmo API")
 	}
@@ -72,20 +87,6 @@ func FetchData(logger *zap.SugaredLogger, sources []internal.Source, apiClientId
 		return nil, errors.Wrap(err, "could not fetch data from the Netatmo API")
 	}
 	logger.With("num_devices", len(devices.Devices)).Debug("got response with stations data")
-
-	tokens := authedClient.GetTokens()
-	if token != tokens.AccessToken || refreshToken != tokens.RefreshToken {
-		viper.Set("old_token", token)
-		viper.Set("old_refresh", refreshToken)
-		viper.Set("token", tokens.AccessToken)
-		viper.Set("refreshToken", tokens.RefreshToken)
-		logger.With("old_token", token, "new_token", tokens.AccessToken, "old_refresh", refreshToken, "new_refresh", tokens.RefreshToken, "new_expiry", tokens.Expiry)
-
-		viper.Set("tokenExpiry", tokens.Expiry.Format(time.RFC3339))
-		if err = viper.WriteConfig(); err != nil {
-			logger.With("error", err).Error("could not save generated OAuth tokens")
-		}
-	}
 
 	foundMeasurements := 0
 	now := time.Now().UTC()
